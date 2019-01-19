@@ -149,9 +149,13 @@ def readingFile():
 
         mat_dict.append(mat)
 
-    base_mat_dict = copy.deepcopy(mat_dict[0])
+    after_random_mat_dict = []
+    for rating_index in range(total_ratings):
+        after_random_mat_dict.append(randomValuesWithZero(getGroundTruth(mat_dict[rating_index],total_users,total_items),0.3))
+
+    base_mat_dict = copy.deepcopy(after_random_mat_dict[0])
     
-    return mat_dict, base_mat_dict, total_users, total_items
+    return after_random_mat_dict, base_mat_dict, total_users, total_items
 
 
 # Similarity Measurement Modul
@@ -339,6 +343,15 @@ def compareResultWithGroundTruth(base_mat, ground_truth, pred_results, total_use
     print "MAE Pearson: " + str(sm.mean_absolute_error(ground_truth,mat_results[2]))
     print "MAE Euclidean: " + str(sm.mean_absolute_error(ground_truth,mat_results[3]))
     
+def randomValuesWithZero(ground_truth,percent):
+    temp_base_mat = copy.deepcopy(ground_truth)
+    prop = int(temp_base_mat.size * percent)
+    i = [random.choice(range(temp_base_mat.shape[0])) for _ in range(prop)]
+    j = [random.choice(range(temp_base_mat.shape[1])) for _ in range(prop)]
+    temp_base_mat[i,j] = 0.0
+
+    return temp_base_mat
+
 #MAIN PROGRAM
 start = time.time()
 temp_mat, base_mat, total_users, total_items = readingFile()
