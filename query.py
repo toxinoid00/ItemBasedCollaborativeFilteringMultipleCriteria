@@ -188,8 +188,14 @@ def similarity_item(data,total_users,total_items):
                 if np.count_nonzero(data[rating_index][:,item1]) and np.count_nonzero(data[rating_index][:,item2]):
                     item_cosine[item1][item2] = 1-scipy.spatial.distance.cosine(data[rating_index][:,item1],data[rating_index][:,item2])
                     item_tanimoto[item1][item2] = scipy.spatial.distance.rogerstanimoto(temp_item_tanimoto[:,item1],temp_item_tanimoto[:,item2])
-                    item_pearson[item1][item2] = scipy.stats.pearsonr(data[rating_index][:,item1],data[rating_index][:,item2])[0]    
                     item_euclidean[item1][item2] = scipy.spatial.distance.euclidean(data[rating_index][:,item1],data[rating_index][:,item2])
+                    try:
+                        if not math.isnan(scipy.stats.pearsonr(data[rating_index][:,item1],data[rating_index][:,item2])[0]):
+                            item_pearson[item1][item2] = scipy.stats.pearsonr(data[rating_index][:,item1],data[rating_index][:,item2])[0]
+                        else:
+                            item_pearson[item1][item2] = 0.0
+                    except:
+                        item_pearson[item1][item2] = 0.0
        
         items_cosine.append(item_cosine)
         items_tanimoto.append(item_tanimoto)
@@ -273,6 +279,7 @@ def predictRating(data,base,total_users,total_items):
     print "\nProgram begin...\n"
     print "Total users: " + str(total_users)
     print "Total items: " + str(total_items)
+    print "Total values: " + str(total_items*total_users)
     
     empty_index_users = []
     empty_index_items = []
@@ -285,7 +292,7 @@ def predictRating(data,base,total_users,total_items):
     sim_results = similarity_item(data,total_users,total_items)
 
     print "Similarity measurement done!"
-    print "\nPredict Begin...\n"
+    print "\nPredict Begin..."
 
     toBeRated = {"user":[], "item":[]}
 
@@ -321,15 +328,16 @@ def predictRating(data,base,total_users,total_items):
 
             pred_rate.append(pred)
 
-        print "Total pred sim_index " + str(sim_index) + ": " + str(len(pred_rate))
+        #print "Total pred sim_index " + str(sim_index) + ": " + str(len(pred_rate))
         pred_results.append(pred_rate)
 
     print "\nAll predict done!\n"
 
-    return pred_results, empty_index_users, empty_index_items
+    return pred_results, empty_index_users, empty_index_items, sim_results
 
 def compareResultWithGroundTruth(base_mat, ground_truth, pred_results, total_users, total_items, empty_index_users, empty_index_items):
     mat_results = []
+    mae_results = []
     for sim_index in range(len(pred_results)):
         mat_result = copy.deepcopy(base_mat)
         pred_result = pred_results[sim_index]
@@ -337,17 +345,22 @@ def compareResultWithGroundTruth(base_mat, ground_truth, pred_results, total_use
             mat_result[empty_index_users[index]][empty_index_items[index]] = pred_result[index]
 
         mat_results.append(mat_result)
+        mae_results.append(sm.mean_absolute_error(ground_truth,mat_result))
 
-    print "MAE Cosine: " + str(sm.mean_absolute_error(ground_truth,mat_results[0]))
-    print "MAE Tanimoto: " + str(sm.mean_absolute_error(ground_truth,mat_results[1]))
-    print "MAE Pearson: " + str(sm.mean_absolute_error(ground_truth,mat_results[2]))
-    print "MAE Euclidean: " + str(sm.mean_absolute_error(ground_truth,mat_results[3]))
+    print "MAE Cosine: " + str(mae_results[0])
+    print "MAE Tanimoto: " + str(mae_results[1])
+    print "MAE Pearson: " + str(mae_results[2])
+    print "MAE Euclidean: " + str(mae_results[3])
+
+    return mat_results, mae_results
     
 def randomValuesWithZero(ground_truth,percent):
     temp_base_mat = copy.deepcopy(ground_truth)
     prop = int(temp_base_mat.size * percent)
+    
     i = [random.choice(range(temp_base_mat.shape[0])) for _ in range(prop)]
     j = [random.choice(range(temp_base_mat.shape[1])) for _ in range(prop)]
+    
     temp_base_mat[i,j] = 0.0
 
     return temp_base_mat
@@ -356,8 +369,35 @@ def randomValuesWithZero(ground_truth,percent):
 start = time.time()
 temp_mat, base_mat, total_users, total_items = readingFile()
 ground_truth = getGroundTruth(base_mat,total_users,total_items)
-pred_results, empty_index_users, empty_index_items = predictRating(temp_mat,base_mat,total_users,total_items)
-compareResultWithGroundTruth(base_mat,ground_truth,pred_results,total_users,total_items, empty_index_users, empty_index_items)
+pred_results, empty_index_users, empty_index_items, sim_results = predictRating(temp_mat,base_mat,total_users,total_items)
+mat_results, mae_results = compareResultWithGroundTruth(base_mat,ground_truth,pred_results,total_users,total_items, empty_index_users, empty_index_items)
 end = time.time()
-print "\nRuntime program: " + str(end-start) + "s\n"
+print "\nRuntime similarity measurement: " + str(end-start) + "s"
 #END OF PROGRAM
+
+# print "\nJUST FOR DEMO"
+# print "\nData from users:"
+# print ground_truth
+# print "\nData after random 30% with zero:"
+# print base_mat
+# print "\nPredict using cosine"
+# print mat_results[0]
+# print "\nPredict using tanimoto"
+# print mat_results[1]
+# print "\nPredict using pearson"
+# print mat_results[2]
+# print "\nPredict using euclidean"
+# print mat_results[3]
+# print "\nMAE Cosine: " + str(mae_results[0])
+# print "\nMAE Tanimoto: " + str(mae_results[1])
+# print "\nMAE Pearson: " + str(mae_results[2])
+# print "\nMAE Euclidean: " + str(mae_results[3])
+# print "\nSimilarity matrix using cosine"
+# print sim_results[0]
+# print "\nSimilarity matrix using tanimoto"
+# print sim_results[1]
+# print "\nSimilarity matrix using pearson"
+# print sim_results[2]
+# print "\nSimilarity matrix using euclidean"
+# print sim_results[3]
+# print "\n"
