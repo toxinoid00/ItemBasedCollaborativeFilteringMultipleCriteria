@@ -59,8 +59,8 @@ def getUniqueValueArray(array):
 def createZerosMatrix(row,col):
     return np.zeros((row,col))
 
-def saveToExcel(mat):
-    workbook = xlsxwriter.Workbook('testExcel.xlsx')
+def saveToExcel(mat,name,index):
+    workbook = xlsxwriter.Workbook(name+str(index)+'.xlsx')
     worksheet = workbook.add_worksheet()
 
     col = 0
@@ -374,6 +374,17 @@ mat_results, mae_results = compareResultWithGroundTruth(base_mat,ground_truth,pr
 end = time.time()
 print "\nRuntime similarity measurement: " + str(end-start) + "s"
 #END OF PROGRAM
+
+# saveToExcel(base_mat,"base_mat",1)
+# saveToExcel(ground_truth,"ground_truth",1)
+# saveToExcel(sim_results[0],"sim_result",1)
+# saveToExcel(sim_results[1],"sim_result",2)
+# saveToExcel(sim_results[2],"sim_result",3)
+# saveToExcel(sim_results[3],"sim_result",4)
+# saveToExcel(mat_results[0],"mat_result",1)
+# saveToExcel(mat_results[1],"mat_result",2)
+# saveToExcel(mat_results[2],"mat_result",3)
+# saveToExcel(mat_results[3],"mat_result",4)
 
 # print "\nJUST FOR DEMO"
 # print "\nData from users:"
